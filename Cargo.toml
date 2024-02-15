@@ -9,25 +9,26 @@ homepage = "https://github.com/chardon55/svgize"
 license = "MIT"
 description = "Fast and safe SVG encoder"
 
+[dependencies]
+quick-xml = { version = "0.31", default-features = false }
+rayon = { version = "^1.7", optional = true , default-features = false }
+
 [features]
-default = ["attr_core", "attr_styling"]
+default = ["attr-core", "attr-styling", "rayon"]
 
-attr_core = []
-attr_styling = []
-attr_event = []
-attr_prest = []
-attr_cond_proc = []
+attr-core = []
+attr-styling = []
+attr-event = []
+attr-presentation = []
+attr-cond_proc = []
 
-cross_origin = []
+crossorigin = []
 
 # Experimental SVG standard 
 exp = []
 
-ns_xml = []
-ns_xlink = []
+ns-xml = []
+ns-xlink = []
 
 deprecated = []
-
-[dependencies]
-quick-xml = "0.31"
 
