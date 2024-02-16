@@ -96,10 +96,75 @@ macro_rules! impl_to_string {
 
 pub(crate) use impl_to_string;
 
-pub enum ElementKind {
-    Anchor(Anchor),
-    // TODO: Add more
+macro_rules! xml_write {
+    ($writer:ident, $bs:ident, $children:expr, $tag:expr) => {
+        if let Some(children) = $children.as_ref() {
+            $writer.write_event(Event::Start($bs))
+                .or_else(|err| Err(Error::XmlWriterError(err)))?;
+
+            for child in children.iter() {
+                match child {
+                    ChildKind::String(ref content) => {
+                        $writer.write_event(Event::Text(BytesText::new(content.as_str())))
+                            .or_else(|err| Err(Error::XmlWriterError(err)))?;
+                    }
+                    ChildKind::Element(ref el) => {
+                        el.write_xml($writer)?;
+                    }
+                }
+
+            }
+        
+            $writer.write_event(Event::End(BytesEnd::new($tag.as_str())))
+                .or_else(|err| Err(Error::XmlWriterError(err)))?;
+        } else {
+            $writer.write_event(Event::Empty($bs))
+                .or_else(|err| Err(Error::XmlWriterError(err)))?;
+        }
+    };
 }
+
+pub(crate) use xml_write;
+
+macro_rules! def_element_kind {
+    ($($type_name:tt),*) => {
+        pub enum ElementKind {
+            $($type_name($type_name),)*
+        }
+
+        impl WriteXml for ElementKind {
+            fn write_xml(&self, writer: &mut Writer<Cursor<Vec<u8>>>) -> Result<(), Error> {
+                Ok(match self {
+                    $(
+                        ElementKind::$type_name(inner) => inner.write_xml(writer)?,
+                    )*
+                })
+            }
+        }
+
+        impl Children for ElementKind {
+            fn children(&self) -> Option<&Vec<ChildKind>> {
+                match self {
+                    $(
+                        ElementKind::$type_name(inner) => inner.children(),
+                    )*
+                }
+            }
+
+            fn children_mut(&mut self) -> &mut Vec<ChildKind> {
+                match self {
+                    $(
+                        ElementKind::$type_name(inner) => inner.children_mut(),
+                    )*
+                }
+            }
+
+        }
+    };
+}
+
+def_element_kind!(Anchor);
+impl_to_string!(ElementKind);
 
 pub enum ChildKind {
     String(String),
