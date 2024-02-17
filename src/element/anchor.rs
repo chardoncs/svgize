@@ -1,3 +1,5 @@
+#[cfg(feature = "sparse_attr")]
+use std::collections::HashMap;
 use std::io::Cursor;
 
 use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
@@ -8,6 +10,10 @@ use crate::attr::referrer_policy::ReferrerPolicy;
 use crate::attr::CoreAttr;
 #[cfg(feature = "attr-styling")]
 use crate::attr::StylingAttr;
+#[cfg(feature = "attr-cond_proc")]
+use crate::attr::CondProcAttr;
+#[cfg(feature = "attr-event")]
+use crate::attr::{GlobalEventAttr, DocElementEventAttr, GraphicalEventAttr};
 use crate::attr::WriteInAttr;
 use crate::element::xml_write;
 use crate::error::Error;
@@ -35,6 +41,18 @@ pub struct Anchor {
     #[cfg(feature = "attr-styling")]
     pub styling: StylingAttr,
 
+    #[cfg(feature = "attr-cond_proc")]
+    pub cond_proc: CondProcAttr,
+
+    #[cfg(feature = "attr-event")]
+    pub global_ev: HashMap<GlobalEventAttr, String>,
+
+    #[cfg(feature = "attr-event")]
+    pub doc_el_ev: HashMap<DocElementEventAttr, String>,
+
+    #[cfg(feature = "attr-event")]
+    pub graphical_ev: HashMap<GraphicalEventAttr, String>,
+
     children: Option<Vec<ChildKind>>,
 }
 
@@ -46,17 +64,28 @@ impl WriteXml for Anchor {
     fn write_xml(&self, writer: &mut quick_xml::Writer<Cursor<Vec<u8>>>) -> Result<(), Error> {
         let tag_name = self.tag_name();
 
-        let mut el = BytesStart::new(tag_name.as_str());
-
-        #[cfg(feature = "attr-core")]
-        self.core.write_in(&mut el)?;
-
-        #[cfg(feature = "attr-styling")]
-        self.styling.write_in(&mut el)?;
+        let mut el_owned = BytesStart::new(tag_name.as_str());
+        let el = &mut el_owned;
 
         push_attr!(self.download, el, "download" <- String);
         push_attr!(self.href, el, "href" <- String);
         push_attr!(self.href_lang, el, "hreflang" <- String);
+
+        #[cfg(feature = "attr-core")]
+        self.core.write_in(el)?;
+
+        #[cfg(feature = "attr-styling")]
+        self.styling.write_in(el)?;
+
+        #[cfg(feature = "attr-cond_proc")]
+        self.cond_proc.write_in(el);
+
+        #[cfg(feature = "attr-event")]
+        {
+            self.global_ev.write_in(el)?;
+            self.doc_el_ev.write_in(el)?;
+            self.graphical_ev.write_in(el)?;
+        }
 
         #[cfg(feature = "exp")]
         push_attr!(self.ping, el, "ping" <- strings | " ");
@@ -64,7 +93,7 @@ impl WriteXml for Anchor {
         #[cfg(feature = "crossorigin")]
         push_attr!(self.referrer_policy, el, "referrerpolicy" <- ToString);
 
-        xml_write!(writer, el, self.children, tag_name);
+        xml_write!(writer, el_owned, self.children, tag_name);
 
         Ok(())
     }
@@ -87,6 +116,12 @@ impl Default for Anchor {
             core: CoreAttr::default(),
             #[cfg(feature = "attr-styling")]
             styling: StylingAttr::default(),
+            #[cfg(feature = "attr-event")]
+            global_ev: HashMap::new(),
+            #[cfg(feature = "attr-event")]
+            doc_el_ev: HashMap::new(),
+            #[cfg(feature = "attr-event")]
+            graphical_ev: HashMap::new(),
         }
     }
 }

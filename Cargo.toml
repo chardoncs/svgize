@@ -11,24 +11,21 @@ description = "Fast and safe SVG encoder"
 
 [dependencies]
 quick-xml = { version = "0.31", default-features = false }
-rayon = { version = "^1.7", optional = true , default-features = false }
 
 [features]
-default = ["attr-core", "attr-styling", "rayon"]
+default = ["attr-core", "attr-styling",
+]
+
+sparse_attr = []
 
 attr-core = []
 attr-styling = []
-attr-event = []
+attr-event = ["sparse_attr"]
 attr-presentation = []
 attr-cond_proc = []
 
 crossorigin = []
 
-# Experimental SVG standard 
+# Experimental standard 
 exp = []
-
-ns-xml = []
-ns-xlink = []
-
-deprecated = []
 

@@ -1,3 +1,6 @@
+#[cfg(feature = "sparse_attr")]
+use std::collections::HashMap;
+
 use quick_xml::events::BytesStart;
 
 use crate::{error::Error, push_attr};
@@ -7,6 +10,26 @@ pub mod referrer_policy;
 
 pub trait WriteInAttr {
     fn write_in(&self, bs: &mut BytesStart) -> Result<(), Error>;
+}
+
+#[cfg(feature = "sparse_attr")]
+pub trait AttrKey {
+    fn attr_key(&self) -> String;
+}
+
+#[cfg(feature = "sparse_attr")]
+impl<K, V> WriteInAttr for HashMap<K, V>
+where
+    K: AttrKey,
+    V: ToString,
+{
+    fn write_in(&self, bs: &mut BytesStart) -> Result<(), Error> {
+        for (key, val) in self.iter() {
+            bs.push_attribute((key.attr_key().as_str(), val.to_string().as_str()));
+        }
+
+        Ok(())
+    }
 }
 
 /// SVG Core Attributes
@@ -28,24 +51,6 @@ pub struct CoreAttr {
     ///
     /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/tabindex).
     pub tab_index: Option<i32>,
-
-    /// `xml:base`: Specifies a base IRI other than the base IRI of the document.
-    ///
-    /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xml:base).
-    #[cfg(feature = "ns-xml")]
-    pub xml_base: Option<String>,
-
-    /// `xml:lang`: Language attribute available in all XML dialects.
-    ///
-    /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xml:lang).
-    #[cfg(feature = "ns-xml")]
-    pub xml_lang: Option<String>,
-
-    /// `xml:space`: **Deprecated in XML standard**. Specifying and handling white space characters.
-    ///
-    /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xml:space).
-    #[cfg(all(feature = "ns-xml", feature = "deprecated"))]
-    pub xml_space: Option<XmlSpace>,
 }
 
 #[cfg(feature = "attr-core")]
@@ -55,12 +60,6 @@ impl Default for CoreAttr {
             id: None,
             lang: None,
             tab_index: None,
-            #[cfg(feature = "ns-xml")]
-            xml_base: None,
-            #[cfg(feature = "ns-xml")]
-            xml_lang: None,
-            #[cfg(all(feature = "ns-xml", feature = "deprecated"))]
-            xml_space: None,
         }
     }
 }
@@ -72,36 +71,7 @@ impl WriteInAttr for CoreAttr {
         push_attr!(self.lang, bs, "lang" <- String);
         push_attr!(self.tab_index, bs, "tabindex" <- prim);
 
-        #[cfg(feature = "ns-xml")]
-        push_attr!(self.xml_base, bs, "xml:base" <- String);
-        #[cfg(feature = "ns-xml")]
-        push_attr!(self.xml_lang, bs, "xml:lang" <- String);
-            
-        #[cfg(all(feature = "ns-xml", feature = "deprecated"))]
-        push_attr!(self.xml_space, bs, "xml:space" <- ToString);
-
         Ok(())
-    }
-}
-
-/// XML space enumeration
-///
-/// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/xml:space#usage_notes).
-#[cfg(all(feature = "ns-xml", feature = "deprecated"))]
-pub enum XmlSpace {
-    /// `default`
-    Default,
-    /// `preserve`
-    Preserve,
-}
-
-#[cfg(all(feauter = "ns-xml", feature = "deprecated"))]
-impl ToString for XmlSpace {
-    fn to_string(&self) -> String {
-        match self {
-            XmlSpace::Default => "default",
-            XmlSpace::Preserve => "preserve",
-        }.to_string()
     }
 }
 
@@ -154,14 +124,6 @@ pub struct CondProcAttr {
     ///
     /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/systemLanguage).
     pub sys_lang: Option<Vec<String>>,
-
-    /// `requiredFeatures`: **Deprecated in SVG standard**.
-    /// List all the features, [as defined in the SVG 1.1 specification](https://www.w3.org/TR/SVG11/feature.html),
-    /// that must be supported by the browser to be allowed to render the associated element.
-    ///
-    /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/requiredFeatures).
-    #[cfg(feature = "deprecated")]
-    pub req_features: Option<Vec<String>>,
 }
 
 #[cfg(feature = "attr-cond_proc")]
@@ -170,8 +132,6 @@ impl Default for CondProcAttr {
         Self {
             req_exts: None,
             sys_lang: None,
-            #[cfg(feature = "deprecated")]
-            req_features: None,
         }
     }
 }
@@ -182,19 +142,127 @@ impl WriteInAttr for CondProcAttr {
         push_attr!(self.req_exts, bs, "requiredExtensions" <- strings | " ");
         push_attr!(self.sys_lang, bs, "systemLanguage" <- strings | ",");
 
-        #[cfg(feature = "deprecated")]
-        push_attr!(self.req_features, bs, "requiredFeatures" <- strings | " ");
-
         Ok(())
     }
 }
 
-/// SVG Event Attributes
-///
-/// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/Events).
-#[cfg(feature = "attr-event")]
-pub struct EventAttr {
+#[cfg(feature = "sparse_attr")]
+macro_rules! def_sparse_attr {
+    {[$type_name:ident] $($entry:ident, $attr:literal;)*} => {
+        /// SVG Event Attributes
+        ///
+        /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/Events).
+        pub enum $type_name {
+            $(
+                $entry,
+            )*
+        }
 
+        impl AttrKey for $type_name {
+            fn attr_key(&self) -> String {
+                match self {
+                    $(
+                        Self::$entry => $attr,
+                    )*
+                }.to_string()
+            }
+        }
+    };
+}
+
+#[cfg(feature = "attr-event")]
+def_sparse_attr! {
+    [AnimationEventAttr]
+    OnBegin, "onbegin";
+    OnEnd, "onend";
+    OnRepeat, "onrepeat";
+}
+
+#[cfg(feature = "attr-event")]
+def_sparse_attr! {
+    [DocEventAttr]
+    OnAbort, "onabort";
+    OnError, "onerror";
+    OnResize, "onresize";
+    OnScroll, "onscroll";
+    OnUnload, "onunload";
+}
+
+#[cfg(feature = "attr-event")]
+def_sparse_attr! {
+    [DocElementEventAttr]
+    OnCopy, "oncopy";
+    OnCut, "oncut";
+    OnPaste, "onpaste";
+}
+
+#[cfg(feature = "attr-event")]
+def_sparse_attr! {
+    [GlobalEventAttr]
+    OnCancel, "oncancel";
+    OnCanPlay, "oncanplay";
+    OnCanPlayThrough, "oncanplaythrough";
+    OnChange, "onchange";
+    OnClick, "onclick";
+    OnClose, "onclose";
+    OnCueChange, "oncuechange";
+    OnDoubleClick, "ondblclick";
+    OnDrag, "ondrag";
+    OnDragEnd, "ondragend";
+    OnDragEnter, "ondragenter";
+    OnDragLeave, "ondragleave";
+    OnDragOver, "ondragover";
+    OnDragStart, "ondragstart";
+    OnDrop, "ondrop";
+    OnDurationChange, "ondurationchange";
+    OnEmptied, "onemptied";
+    OnEnded, "onended";
+    OnError, "onerror";
+    OnFocus, "onfocus";
+    OnInput, "oninput";
+    OnInvalid, "oninvalid";
+    OnKeyDown, "onkeydown";
+    OnKeyPress, "onkeypress";
+    OnKeyUp, "onkeyup";
+    OnLoad, "onload";
+    OnLoadedData, "onloadeddata";
+    OnLoadedMetadata, "onloadedmetadata";
+    OnLoadStart, "onloadstart";
+    OnMouseDown, "onmousedown";
+    OnMouseEnter, "onmouseenter";
+    OnMouseLeave, "onmouseleave";
+    OnMouseMove, "onmousemove";
+    OnMouseOut, "onmouseout";
+    OnMouseOver, "onmouseover";
+    OnMouseUp, "onmouseup";
+    OnMouseWheel, "onmousewheel";
+    OnPause, "onpause";
+    OnPlay, "onplay";
+    OnPlaying, "onplaying";
+    OnProgress, "onprogress";
+    OnRateChange, "onratechange";
+    OnReset, "onreset";
+    OnResize, "onresize";
+    OnScroll, "onscroll";
+    OnSought, "onseeked"; // I don't think "seeked" is correct English... :/
+    OnSeeking, "onseeking";
+    OnSelect, "onselect";
+    OnShow, "onshow";
+    OnStalled, "onstalled";
+    OnSubmit, "onsubmit";
+    OnSuspend, "onsuspend";
+    OnTimeUpdate, "ontimeupdate";
+    OnToggle, "ontoggle";
+    OnVolumeChange, "onvolumechange";
+    OnWaiting, "onwaiting";
+}
+
+#[cfg(feature = "attr-event")]
+def_sparse_attr! {
+    [GraphicalEventAttr]
+    OnActivate, "onactivate";
+    OnFocusIn, "onfocusin";
+    OnFocusOut, "onfocusout";
 }
 
 /// SVG Presentation Attributes
