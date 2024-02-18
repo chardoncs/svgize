@@ -25,3 +25,25 @@ macro_rules! push_attr {
 }
 
 pub(crate) use push_attr;
+
+macro_rules! stringifiable_enum {
+    {[$type_name:ident] $($entry:ident, $attr:literal;)*} => {
+        pub enum $type_name {
+            $(
+                $entry,
+            )*
+        }
+
+        impl ToString for $type_name {
+            fn to_string(&self) -> String {
+                match self {
+                    $(
+                        Self::$entry => $attr,
+                    )*
+                }.to_string()
+            }
+        }
+    };
+}
+
+pub(crate) use stringifiable_enum;

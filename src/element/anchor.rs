@@ -6,12 +6,6 @@ use quick_xml::events::{BytesEnd, BytesStart, BytesText, Event};
 
 #[cfg(feature = "crossorigin")]
 use crate::attr::referrer_policy::ReferrerPolicy;
-#[cfg(feature = "attr-core")]
-use crate::attr::CoreAttr;
-#[cfg(feature = "attr-styling")]
-use crate::attr::StylingAttr;
-#[cfg(feature = "attr-cond_proc")]
-use crate::attr::CondProcAttr;
 #[cfg(feature = "attr-event")]
 use crate::attr::{GlobalEventAttr, DocElementEventAttr, GraphicalEventAttr};
 use crate::attr::WriteInAttr;
@@ -35,23 +29,8 @@ pub struct Anchor {
     #[cfg(feature = "crossorigin")]
     pub referrer_policy: Option<ReferrerPolicy>,
 
-    #[cfg(feature = "attr-core")]
-    pub core: CoreAttr,
-
-    #[cfg(feature = "attr-styling")]
-    pub styling: StylingAttr,
-
-    #[cfg(feature = "attr-cond_proc")]
-    pub cond_proc: CondProcAttr,
-
     #[cfg(feature = "attr-event")]
-    pub global_ev: HashMap<GlobalEventAttr, String>,
-
-    #[cfg(feature = "attr-event")]
-    pub doc_el_ev: HashMap<DocElementEventAttr, String>,
-
-    #[cfg(feature = "attr-event")]
-    pub graphical_ev: HashMap<GraphicalEventAttr, String>,
+    pub ev: HashMap<EventAttr, String>,
 
     children: Option<Vec<ChildKind>>,
 }
@@ -71,21 +50,11 @@ impl WriteXml for Anchor {
         push_attr!(self.href, el, "href" <- String);
         push_attr!(self.href_lang, el, "hreflang" <- String);
 
-        #[cfg(feature = "attr-core")]
-        self.core.write_in(el)?;
-
-        #[cfg(feature = "attr-styling")]
-        self.styling.write_in(el)?;
-
         #[cfg(feature = "attr-cond_proc")]
         self.cond_proc.write_in(el);
 
         #[cfg(feature = "attr-event")]
-        {
-            self.global_ev.write_in(el)?;
-            self.doc_el_ev.write_in(el)?;
-            self.graphical_ev.write_in(el)?;
-        }
+        self.ev.write_in(el)?;
 
         #[cfg(feature = "exp")]
         push_attr!(self.ping, el, "ping" <- strings | " ");
@@ -112,10 +81,6 @@ impl Default for Anchor {
             ping: None,
             #[cfg(feature = "crossorigin")]
             referrer_policy: None,
-            #[cfg(feature = "attr-core")]
-            core: CoreAttr::default(),
-            #[cfg(feature = "attr-styling")]
-            styling: StylingAttr::default(),
             #[cfg(feature = "attr-event")]
             global_ev: HashMap::new(),
             #[cfg(feature = "attr-event")]

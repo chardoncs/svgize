@@ -32,6 +32,48 @@ pub trait WriteXml {
 /// Element node trait.
 pub trait ElementNode: TagName + WriteXml + ToString + TryToString + Children {}
 
+macro_rules! def_el {
+    {
+        [$name:ident < $tag_name:literal]
+        $(
+            {
+                $($entry:ident, $attr:literal;)*
+            }
+        )?
+        $(
+            #[$proc_macro:meta] {
+                $($entry_c:ident, $attr_c:literal;)*
+            }
+        )*
+    } => {
+        use std::collection::HashMap;
+
+        #[doc = "Exclusive attribute of `"]
+        #[doc = $tag_name]
+        #[doc = "`"]
+        pub enum $name+Attr {
+            $($entry,)?
+            $($(
+                #[$proc_macro]
+                $entry_c,
+            )*)*
+        }
+
+        #[doc = stringify!($name)]
+        #[doc = " representing `"]
+        #[doc = $tag_name]
+        #[doc = "`\n\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/"]
+        #[doc = $tag_name]
+        #[doc = ")."]
+        pub struct $name {
+            attr: Option<HashMap<$name+Attr, String>>,
+        }
+    };
+}
+
+pub(crate) use def_el;
+
 /// Internal helper macro for implementing tag name trait.
 macro_rules! impl_tag {
     ($struct_name:tt, $tag:literal) => {
@@ -139,7 +181,7 @@ macro_rules! def_element_kind {
                         ElementKind::$type_name(inner) => inner.write_xml(writer)?,
                     )*
                 })
-            }
+            }https://developer.mozilla.org/en-US/docs/Web/SVG/Element/a
         }
 
         impl Children for ElementKind {
