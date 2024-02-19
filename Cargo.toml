@@ -13,7 +13,7 @@ description = "Fast and safe SVG encoder"
 quick-xml = { version = "0.31", default-features = false }
 
 [features]
-default = ["attr-core", "attr-styling", "attr-presentation"]
+default = ["attr-core", "attr-styling", "attr-presentation", "attr-event"]
 
 attr-core = []
 attr-styling = []

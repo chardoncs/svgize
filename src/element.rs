@@ -1,17 +1,17 @@
 use std::io::Cursor;
 
-use quick_xml::Writer;
+use quick_xml::{events::{BytesEnd, BytesStart, BytesText, Event}, Writer};
 
 use crate::error::Error;
 
-use self::anchor::Anchor;
+pub use self::path::Path;
 
-mod anchor;
+mod path;
 
 /// Instance having a tag name.
 pub trait TagName {
     /// Access the tag name of current instance.
-    fn tag_name(&self) -> String;
+    fn tag_name(&self) -> &str;
 }
 
 /// Instance having child nodes.
@@ -20,7 +20,7 @@ pub trait Children {
     fn children(&self) -> Option<&Vec<ChildKind>>;
 
     /// Access mutable reference child list.
-    fn children_mut(&mut self) -> &mut Vec<ChildKind>;
+    fn children_mut(&mut self) -> Result<&mut Vec<ChildKind>, Error>;
 }
 
 /// Instance can be written as XML through the `quick_xml` writer.
@@ -32,54 +32,12 @@ pub trait WriteXml {
 /// Element node trait.
 pub trait ElementNode: TagName + WriteXml + ToString + TryToString + Children {}
 
-macro_rules! def_el {
-    {
-        [$name:ident < $tag_name:literal]
-        $(
-            {
-                $($entry:ident, $attr:literal;)*
-            }
-        )?
-        $(
-            #[$proc_macro:meta] {
-                $($entry_c:ident, $attr_c:literal;)*
-            }
-        )*
-    } => {
-        use std::collection::HashMap;
-
-        #[doc = "Exclusive attribute of `"]
-        #[doc = $tag_name]
-        #[doc = "`"]
-        pub enum $name+Attr {
-            $($entry,)?
-            $($(
-                #[$proc_macro]
-                $entry_c,
-            )*)*
-        }
-
-        #[doc = stringify!($name)]
-        #[doc = " representing `"]
-        #[doc = $tag_name]
-        #[doc = "`\n\n"]
-        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/"]
-        #[doc = $tag_name]
-        #[doc = ")."]
-        pub struct $name {
-            attr: Option<HashMap<$name+Attr, String>>,
-        }
-    };
-}
-
-pub(crate) use def_el;
-
 /// Internal helper macro for implementing tag name trait.
 macro_rules! impl_tag {
     ($struct_name:tt, $tag:literal) => {
-        impl TagName for $struct_name {
-            fn tag_name(&self) -> String {
-                $tag.to_string()
+        impl crate::element::TagName for $struct_name {
+            fn tag_name(&self) -> &str {
+                $tag
             }
         }
     };
@@ -90,23 +48,39 @@ pub(crate) use impl_tag;
 /// Internal helper macro for implementing children trait.
 macro_rules! impl_children {
     ($struct_name:tt) => {
-        impl Children for $struct_name {
-            fn children(&self) -> Option<&Vec<ChildKind>> {
+        impl crate::element::Children for $struct_name {
+            fn children(&self) -> Option<&Vec<crate::element::ChildKind>> {
                 self.children.as_ref()
             }
 
-            fn children_mut(&mut self) -> &mut Vec<ChildKind> {
+            fn children_mut(&mut self) -> Result<&mut Vec<crate::element::ChildKind>, crate::error::Error> {
                 if self.children.is_none() {
                     self.children = Some(Vec::new());
                 }
 
-                self.children.as_mut().unwrap() // There must be something
+                Ok(self.children.as_mut().unwrap()) // There must be something
+            }
+        }
+    };
+
+    ($struct_name:tt ?) => {
+        impl crate::element::Children for $struct_name {
+            fn children(&self) -> Option<&Vec<crate::element::ChildKind>> {
+                None
+            }
+
+            fn children_mut(&mut self) -> Result<&mut Vec<crate::element::ChildKind>, crate::error::Error> {
+                Err(crate::error::Error::NoChildrenExpected)
             }
         }
     };
 }
 
 pub(crate) use impl_children;
+
+pub type ChildList = Vec<ChildKind>;
+
+pub type LazyChildList = Option<ChildList>;
 
 /// Instances that might be converted to string.
 pub trait TryToString {
@@ -116,7 +90,7 @@ pub trait TryToString {
 
 macro_rules! impl_to_string {
     ($struct_name:tt) => {
-        impl TryToString for $struct_name {
+        impl crate::element::TryToString for $struct_name {
             fn try_to_string(&self) -> Result<String, crate::error::Error> {
                 let mut writer = quick_xml::Writer::new(std::io::Cursor::new(Vec::new()));
                 self.write_xml(&mut writer)?;
@@ -130,7 +104,7 @@ macro_rules! impl_to_string {
 
         impl ToString for $struct_name {
             fn to_string(&self) -> String {
-                self.try_to_string().unwrap()
+                crate::element::TryToString::try_to_string(self).unwrap()
             }
         }
     };
@@ -138,35 +112,32 @@ macro_rules! impl_to_string {
 
 pub(crate) use impl_to_string;
 
-macro_rules! xml_write {
-    ($writer:ident, $bs:ident, $children:expr, $tag:expr) => {
-        if let Some(children) = $children.as_ref() {
-            $writer.write_event(Event::Start($bs))
-                .or_else(|err| Err(Error::XmlWriterError(err)))?;
+pub(crate) fn convert_into_xml(writer: &mut Writer<Cursor<Vec<u8>>>, bs: BytesStart, children: Option<&ChildList>, tag: &str) -> Result<(), Error> {
+    if let Some(children) = children.as_ref() {
+        writer.write_event(Event::Start(bs))
+            .or_else(|err| Err(Error::XmlWriterError(err)))?;
 
-            for child in children.iter() {
-                match child {
-                    ChildKind::String(ref content) => {
-                        $writer.write_event(Event::Text(BytesText::new(content.as_str())))
-                            .or_else(|err| Err(Error::XmlWriterError(err)))?;
-                    }
-                    ChildKind::Element(ref el) => {
-                        el.write_xml($writer)?;
-                    }
+        for child in children.iter() {
+            match child {
+                ChildKind::String(ref content) => {
+                    writer.write_event(Event::Text(BytesText::new(content.as_str())))
+                        .or_else(|err| Err(Error::XmlWriterError(err)))?;
                 }
-
+                ChildKind::Element(ref el) => {
+                    el.write_xml(writer)?;
+                }
             }
-        
-            $writer.write_event(Event::End(BytesEnd::new($tag.as_str())))
-                .or_else(|err| Err(Error::XmlWriterError(err)))?;
-        } else {
-            $writer.write_event(Event::Empty($bs))
-                .or_else(|err| Err(Error::XmlWriterError(err)))?;
         }
-    };
-}
 
-pub(crate) use xml_write;
+        writer.write_event(Event::End(BytesEnd::new(tag)))
+            .or_else(|err| Err(Error::XmlWriterError(err)))?;
+    } else {
+        writer.write_event(Event::Empty(bs))
+            .or_else(|err| Err(Error::XmlWriterError(err)))?;
+    }
+
+    Ok(())
+}
 
 macro_rules! def_element_kind {
     ($($type_name:tt),*) => {
@@ -181,7 +152,7 @@ macro_rules! def_element_kind {
                         ElementKind::$type_name(inner) => inner.write_xml(writer)?,
                     )*
                 })
-            }https://developer.mozilla.org/en-US/docs/Web/SVG/Element/a
+            }
         }
 
         impl Children for ElementKind {
@@ -193,7 +164,7 @@ macro_rules! def_element_kind {
                 }
             }
 
-            fn children_mut(&mut self) -> &mut Vec<ChildKind> {
+            fn children_mut(&mut self) -> Result<&mut Vec<ChildKind>, Error> {
                 match self {
                     $(
                         ElementKind::$type_name(inner) => inner.children_mut(),
@@ -205,10 +176,10 @@ macro_rules! def_element_kind {
     };
 }
 
-def_element_kind!(Anchor);
-impl_to_string!(ElementKind);
-
 pub enum ChildKind {
     String(String),
     Element(ElementKind),
 }
+
+def_element_kind!(Path);
+impl_to_string!(ElementKind);

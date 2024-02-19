@@ -60,7 +60,7 @@ macro_rules! def_sparse_attr {
                 #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
                 #[doc = $attr]
                 #[doc = ")."]
-                $entry
+                $entry,
             )*)?
             $(
                 $(
@@ -126,7 +126,6 @@ def_sparse_attr! {
         ColorInterpolationFilters, "color-interpolation-filters";
         ColorRendering, "color-rendering";
         Cursor, "cursor";
-        Data, "d";
         Direction, "direction";
         Display, "display";
         DominantBaseline, "dominant-baseline";
@@ -178,6 +177,10 @@ def_sparse_attr! {
     }
 }
 
+pub type AttrMap = HashMap<Attr, String>;
+
+pub type LazyAttrMap = Option<AttrMap>;
+
 #[cfg(feature = "attr-event")]
 def_sparse_attr! {
     [EventAttr] {
@@ -185,8 +188,6 @@ def_sparse_attr! {
         OnEnd, "onend";
         OnRepeat, "onrepeat";
         OnAbort, "onabort";
-        OnError, "onerror";
-        OnResize, "onresize";
         OnScroll, "onscroll";
         OnUnload, "onunload";
         OnCopy, "oncopy";
@@ -236,7 +237,6 @@ def_sparse_attr! {
         OnRateChange, "onratechange";
         OnReset, "onreset";
         OnResize, "onresize";
-        OnScroll, "onscroll";
         OnSought, "onseeked"; // I don't think "seeked" is correct English... :/
         OnSeeking, "onseeking";
         OnSelect, "onselect";
@@ -254,3 +254,8 @@ def_sparse_attr! {
     }
 }
 
+#[cfg(feature = "attr-event")]
+pub type EventMap = HashMap<EventAttr, String>;
+
+#[cfg(feature = "attr-event")]
+pub type LazyEventMap = Option<HashMap<EventAttr, String>>;
