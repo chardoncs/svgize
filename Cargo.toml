@@ -6,8 +6,8 @@ authors = ["Charles Dong <charlesdong_2000@outlook.com>"]
 readme = "./README.md"
 repository = "https://github.com/chardon55/svgize.git"
 homepage = "https://github.com/chardon55/svgize"
-license = "MIT"
-description = "Fast and safe SVG encoder"
+license = "MIT OR Apache-2.0"
+description = "Advanced SVG encoding library"
 
 [dependencies]
 quick-xml = { version = "0.31", default-features = false }
