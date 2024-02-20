@@ -1,8 +1,6 @@
 use quick_xml::events::BytesStart;
 
 use crate::{attr::{impl_attr_accessors, LazyAttrMap}, element::{convert_into_xml, TagName}, push_attr, Point};
-#[cfg(feature = "attr-event")]
-use crate::attr::LazyEventMap;
 
 use super::{impl_element, WriteXml};
 
@@ -11,9 +9,6 @@ pub struct Path {
     length: Option<f32>,
     
     attr: LazyAttrMap,
-
-    #[cfg(feature = "attr-event")]
-    ev_attr: LazyEventMap,
 }
 
 impl Default for Path {
@@ -22,8 +17,6 @@ impl Default for Path {
             d: None,
             length: None,
             attr: None,
-            #[cfg(feature = "attr-event")]
-            ev_attr: None,
         }
     }
 }
@@ -78,9 +71,6 @@ impl WriteXml for Path {
         push_attr!(self.length, bs, "pathLength" <- prim);
 
         push_attr!(map: self.attr, bs);
-
-        #[cfg(feature = "attr-event")]
-        push_attr!(map: self.ev_attr, bs);
 
         convert_into_xml(writer, bs, None, tag)
     }

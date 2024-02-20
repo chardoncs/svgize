@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Index};
 
 use quick_xml::events::BytesStart;
 
@@ -51,6 +51,7 @@ macro_rules! def_sparse_attr {
         /// SVG Attributes
         ///
         /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute).
+        #[derive(PartialEq, Eq, Hash)]
         pub enum $type_name {
             $($(
                 $(#[$entry_macro])*
@@ -175,21 +176,7 @@ def_sparse_attr! {
         WordSpacing, "word-spacing";
         WritingMode, "writing-mode";
     }
-}
-
-pub type AttrMap = HashMap<Attr, String>;
-
-pub type LazyAttrMap = Option<AttrMap>;
-
-pub trait AccessAttr {
-    fn attr_map(&self) -> Option<&AttrMap>;
-
-    fn attr_map_mut(&mut self) -> &mut AttrMap;
-}
-
-#[cfg(feature = "attr-event")]
-def_sparse_attr! {
-    [EventAttr] {
+    #[cfg(feature = "attr-event")] {
         OnBegin, "onbegin";
         OnEnd, "onend";
         OnRepeat, "onrepeat";
@@ -260,47 +247,38 @@ def_sparse_attr! {
     }
 }
 
-#[cfg(feature = "attr-event")]
-pub type EventMap = HashMap<EventAttr, String>;
+pub type AttrMap = HashMap<Attr, String>;
 
-#[cfg(feature = "attr-event")]
-pub type LazyEventMap = Option<HashMap<EventAttr, String>>;
+pub type LazyAttrMap = Option<AttrMap>;
 
-#[cfg(feature = "attr-event")]
-pub trait AccessEvent {
-    fn event_map(&self) -> Option<&EventMap>;
+pub trait AccessAttr {
+    fn attr(&self, attr: &Attr) -> Option<&str>;
 
-    fn event_map_mut(&mut self) -> &mut EventMap;
+    fn set_attr(&mut self, attr: Attr, value: &str);
+
+    fn pop_attr(&mut self, attr: &Attr) -> Option<String>;
 }
 
 macro_rules! impl_attr_accessors {
     ($name:ident) => {
         impl crate::attr::AccessAttr for $name {
-            fn attr_map(&self) -> Option<&crate::attr::AttrMap> {
-                self.attr.as_ref()
+            fn attr(&self, attr: &crate::attr::Attr) -> Option<&str> {
+                Some(self.attr.as_ref()?.get(attr)?.as_str())
             }
 
-            fn attr_map_mut(&mut self) -> &mut crate::attr::AttrMap {
+            fn set_attr(&mut self, attr: crate::attr::Attr, value: &str) {
                 if self.attr.is_none() {
                     self.attr = Some(std::collections::HashMap::new());
                 }
 
                 self.attr.as_mut().unwrap()
-            }
-        }
-
-        #[cfg(feature = "attr-event")]
-        impl crate::attr::AccessEvent for $name {
-            fn event_map(&self) -> Option<&crate::attr::EventMap> {
-                self.ev_attr.as_ref()
+                    .entry(attr)
+                    .and_modify(|cur| *cur = value.to_string())
+                    .or_insert(value.to_string());
             }
 
-            fn event_map_mut(&mut self) -> &mut crate::attr::EventMap {
-                if self.ev_attr.is_none() {
-                    self.ev_attr = Some(std::collections::HashMap::new());
-                }
-
-                self.ev_attr.as_mut().unwrap()
+            fn pop_attr(&mut self, attr: &crate::attr::Attr) -> Option<String> {
+                self.attr.as_mut()?.remove(attr)
             }
         }
     };
