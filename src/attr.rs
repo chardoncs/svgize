@@ -48,9 +48,9 @@ macro_rules! def_sparse_attr {
             }
         )*
     } => {
-        /// SVG Event Attributes
+        /// SVG Attributes
         ///
-        /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/Events).
+        /// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute).
         pub enum $type_name {
             $($(
                 $(#[$entry_macro])*
@@ -181,6 +181,12 @@ pub type AttrMap = HashMap<Attr, String>;
 
 pub type LazyAttrMap = Option<AttrMap>;
 
+pub trait AccessAttr {
+    fn attr_map(&self) -> Option<&AttrMap>;
+
+    fn attr_map_mut(&mut self) -> &mut AttrMap;
+}
+
 #[cfg(feature = "attr-event")]
 def_sparse_attr! {
     [EventAttr] {
@@ -259,3 +265,45 @@ pub type EventMap = HashMap<EventAttr, String>;
 
 #[cfg(feature = "attr-event")]
 pub type LazyEventMap = Option<HashMap<EventAttr, String>>;
+
+#[cfg(feature = "attr-event")]
+pub trait AccessEvent {
+    fn event_map(&self) -> Option<&EventMap>;
+
+    fn event_map_mut(&mut self) -> &mut EventMap;
+}
+
+macro_rules! impl_attr_accessors {
+    ($name:ident) => {
+        impl crate::attr::AccessAttr for $name {
+            fn attr_map(&self) -> Option<&crate::attr::AttrMap> {
+                self.attr.as_ref()
+            }
+
+            fn attr_map_mut(&mut self) -> &mut crate::attr::AttrMap {
+                if self.attr.is_none() {
+                    self.attr = Some(std::collections::HashMap::new());
+                }
+
+                self.attr.as_mut().unwrap()
+            }
+        }
+
+        #[cfg(feature = "attr-event")]
+        impl crate::attr::AccessEvent for $name {
+            fn event_map(&self) -> Option<&crate::attr::EventMap> {
+                self.ev_attr.as_ref()
+            }
+
+            fn event_map_mut(&mut self) -> &mut crate::attr::EventMap {
+                if self.ev_attr.is_none() {
+                    self.ev_attr = Some(std::collections::HashMap::new());
+                }
+
+                self.ev_attr.as_mut().unwrap()
+            }
+        }
+    };
+}
+
+pub(crate) use impl_attr_accessors;

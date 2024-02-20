@@ -6,7 +6,7 @@ use crate::error::Error;
 
 pub use self::path::Path;
 
-mod path;
+pub mod path;
 
 /// Instance having a tag name.
 pub trait TagName {
@@ -36,6 +36,7 @@ pub trait ElementNode: TagName + WriteXml + ToString + TryToString + Children {}
 macro_rules! impl_tag {
     ($struct_name:tt, $tag:literal) => {
         impl crate::element::TagName for $struct_name {
+            #[inline]
             fn tag_name(&self) -> &str {
                 $tag
             }
@@ -181,5 +182,26 @@ pub enum ChildKind {
     Element(ElementKind),
 }
 
+macro_rules! impl_element {
+    ($name:ident, $tag:literal) => {
+        crate::element::impl_tag!($name, $tag);
+        crate::element::impl_children!($name);
+        crate::element::impl_to_string!($name);
+
+        impl crate::element::ElementNode for $name {}
+    };
+
+    ($name:ident?, $tag:literal) => {
+        crate::element::impl_tag!($name, $tag);
+        crate::element::impl_children!($name?);
+        crate::element::impl_to_string!(Path);
+
+        impl crate::element::ElementNode for $name {}
+    };
+}
+
+pub(crate) use impl_element;
+
 def_element_kind!(Path);
 impl_to_string!(ElementKind);
+
