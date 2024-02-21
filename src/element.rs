@@ -5,8 +5,10 @@ use quick_xml::{events::{BytesEnd, BytesStart, BytesText, Event}, Writer};
 use crate::error::Error;
 
 pub use self::path::Path;
+pub use self::rect::Rect;
 
 pub mod path;
+pub mod rect;
 
 /// Instance having a tag name.
 pub trait TagName {
@@ -50,7 +52,7 @@ pub(crate) use impl_tag;
 macro_rules! impl_children {
     ($struct_name:tt) => {
         impl crate::element::Children for $struct_name {
-            fn children(&self) -> Option<&Vec<crate::element::ChildKind>> {
+            fn children(&self) -> Option<&crate::element::ChildList> {
                 self.children.as_ref()
             }
 

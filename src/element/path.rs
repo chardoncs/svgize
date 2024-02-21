@@ -32,7 +32,7 @@ impl Path {
         T: ToString,
     {
         let mut p = Self::default();
-        p.set_data(data);
+        p.set_data(Some(&data));
 
         p
     }
@@ -41,23 +41,21 @@ impl Path {
         Some(self.d.as_ref()?.as_str())
     }
 
-    pub fn set_data<T>(&mut self, data: T)
+    pub fn set_data<T>(&mut self, data: Option<&T>) -> &mut Self
     where
         T: ToString,
     {
-        self.d = Some(data.to_string());
-    }
-
-    pub fn clear_data(&mut self) {
-        self.d = None;
+        self.d = data.and_then(|value| Some(value.to_string()));
+        self
     }
 
     pub fn path_length(&self) -> Option<f32> {
         self.length
     }
 
-    pub fn set_path_length(&mut self, len: Option<f32>) {
+    pub fn set_path_length(&mut self, len: Option<f32>) -> &mut Self {
         self.length = len;
+        self
     }
 }
 
@@ -298,14 +296,14 @@ fn to_cmd_str(cmd: &PathCommandKind) -> String {
         PathCommandKind::SmoothQuadraticBezierRel(_) => "t",
         PathCommandKind::EllipticalArcAbs { .. } => "A",
         PathCommandKind::EllipticalArcRel { .. } => "a",
-        PathCommandKind::Close => "z",
+        PathCommandKind::Close => "Z",
     }.to_string()
 }
 
 impl ToString for PathData {
     fn to_string(&self) -> String {
         let mut clauses: Vec<String> = Vec::new();
-        let mut tokens: Vec<String> = Vec::with_capacity(8);
+        let mut tokens: Vec<String> = Vec::with_capacity(7);
 
         for entry in self.cmds.iter() {
 
