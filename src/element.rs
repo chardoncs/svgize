@@ -5,9 +5,11 @@ use quick_xml::{events::{BytesEnd, BytesStart, BytesText, Event}, Writer};
 use crate::error::Error;
 
 pub use self::path::Path;
+pub use self::svg::Svg;
 pub use self::rect::Rect;
 
 pub mod path;
+pub mod svg;
 pub mod rect;
 
 /// Instance having a tag name.
@@ -179,8 +181,11 @@ macro_rules! def_element_kind {
     };
 }
 
+/// Child kind enumeration
 pub enum ChildKind {
+    /// Raw string
     String(String),
+    /// Other elements
     Element(ElementKind),
 }
 
@@ -203,6 +208,111 @@ macro_rules! impl_element {
 }
 
 pub(crate) use impl_element;
+
+macro_rules! impl_accessor {
+    (string -> $name:ident, $setter:ident, $attr:literal) => {
+        #[doc = "Get `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $name(&self) -> Option<&str> {
+            Some(self.$name.as_ref()?.as_str())
+        }
+
+        #[doc = "Set `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+
+        pub fn $setter(&mut self, value: Option<&str>) -> &mut Self {
+            self.$name = value.and_then(|value| Some(value.to_string()));
+            self
+        }
+    };
+    
+    (string* -> $name:ident, $setter:ident, $attr:literal) => {
+        #[doc = "Get `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $name(&self) -> Option<&str> {
+            Some(self.$name.as_ref()?.as_str())
+        }
+
+        #[doc = "Set `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+
+        pub fn $setter<T>(&mut self, value: Option<&T>) -> &mut Self
+        where
+            T: ToString,
+        {
+            self.$name = value.and_then(|value| Some(value.to_string()));
+            self
+        }
+    };
+
+    (string -> $name:ident, $setter:ident, $attr:literal) => {
+        #[doc = "Get `"]
+        #[doc = $attr]
+        #[doc = "`\n\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $name(&self) -> Option<&str> {
+            Some(self.$name.as_ref()?.as_str())
+        }
+
+        #[doc = "Set `"]
+        #[doc = $attr]
+        #[doc = "`\n\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+
+        pub fn $setter<T>(&mut self, value: Option<&T>) -> &mut Self
+        where
+            T: ToString,
+        {
+            self.$name = value.and_then(|value| Some(value.to_string()));
+            self
+        }
+    };
+    (primitive -> $name:ident, $setter:ident, $type:ty, $attr:literal) => {
+        #[doc = "Get `"]
+        #[doc = $attr]
+        #[doc = "`\n\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $name(&self) -> Option<$type> {
+            self.$name
+        }
+
+        #[doc = "Set `"]
+        #[doc = $attr]
+        #[doc = "`\n\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+
+        pub fn $setter<T>(&mut self, value: Option<$type>) -> &mut Self {
+            self.$name = value;
+            self
+        }
+    };
+}
+
+pub(crate) use impl_accessor;
 
 def_element_kind!(Path);
 impl_to_string!(ElementKind);

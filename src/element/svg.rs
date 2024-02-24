@@ -4,94 +4,86 @@ use crate::{attr::{impl_attr_accessors, LazyAttrMap}, element::convert_into_xml,
 
 use super::{impl_accessor, impl_element, ChildList, TagName, WriteXml};
 
-/// Rectangle element (`<rect>`)
+/// SVG container element (`<svg>`)
 ///
-/// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/rect).
-pub struct Rect {
-    x: Option<String>,
-    y: Option<String>,
+/// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/svg).
+pub struct Svg {
+    view_box: Option<String>,
 
     width: Option<String>,
     height: Option<String>,
 
-    rx: Option<String>,
-    ry: Option<String>,
+    x: Option<String>,
+    y: Option<String>,
 
-    path_length: Option<f32>,
+    preserve_aspect_ratio: Option<String>,
 
     attr: LazyAttrMap,
-
     children: Option<ChildList>,
 }
 
-impl Default for Rect {
+impl Default for Svg {
     fn default() -> Self {
         Self {
-            x: None,
-            y: None,
+            view_box: None,
             width: None,
             height: None,
-            rx: None,
-            ry: None,
-            path_length: None,
+            x: None,
+            y: None,
+            preserve_aspect_ratio: None,
             attr: None,
             children: None,
         }
     }
 }
 
-impl Rect {
+impl Svg {
     #[inline]
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Create an SVG rectangle with `x`, `y`, `width`, and `height`.
-    pub fn create<TX, TY, TW, TH>(x: &TX, y: &TY, width: &TW, height: &TH) -> Self
+    /// Initialize SVG element with `viewBox` attribute.
+    pub fn with_view_box<T>(view_box: &T) -> Self
     where
-        TX: ToString,
-        TY: ToString,
-        TW: ToString,
-        TH: ToString,
+        T: ToString,
     {
-        let mut rect = Self::new();
+        let mut svg = Self::new();
+        
+        svg.set_view_box(Some(view_box));
 
-        rect.set_x(Some(x))
-            .set_y(Some(y))
-            .set_width(Some(width))
-            .set_height(Some(height));
-
-        rect
+        svg
     }
 
+    impl_accessor!(string* -> view_box, set_view_box, "viewBox");
     impl_accessor!(string* -> x, set_x, "x");
     impl_accessor!(string* -> y, set_y, "y");
     impl_accessor!(string* -> width, set_width, "width");
     impl_accessor!(string* -> height, set_height, "height");
-    impl_accessor!(string* -> rx, set_rx, "rx");
-    impl_accessor!(string* -> ry, set_ry, "ry");
-    impl_accessor!(primitive -> path_length, set_path_length, f32, "pathLength");
+    impl_accessor!(string* -> preserve_aspect_ratio, set_preserve_aspect_ratio, "preserveAspectRatio");
 }
 
-impl WriteXml for Rect {
+impl_element!(Svg, "svg");
+impl_attr_accessors!(Svg);
+
+impl WriteXml for Svg {
     fn write_xml(&self, writer: &mut quick_xml::Writer<std::io::Cursor<Vec<u8>>>) -> Result<(), crate::error::Error> {
         let tag = self.tag_name();
 
         let mut bs = BytesStart::new(tag);
 
+        push_attr!(self.view_box, bs, "viewBox" <- String);
         push_attr!(self.x, bs, "x" <- String);
         push_attr!(self.y, bs, "y" <- String);
         push_attr!(self.width, bs, "width" <- String);
         push_attr!(self.height, bs, "height" <- String);
-        push_attr!(self.rx, bs, "rx" <- String);
-        push_attr!(self.ry, bs, "ry" <- String);
-        push_attr!(self.path_length, bs, "pathLength" <- prim);
+        push_attr!(self.preserve_aspect_ratio, bs, "preserveAspectRatio" <- String);
 
         push_attr!(map: self.attr, bs);
+
+        // Add XML namespace of SVG
+        bs.push_attribute(("xmlns", "http://www.w3.org/2000/svg"));
 
         convert_into_xml(writer, bs, self.children.as_ref(), tag)
     }
 }
-
-impl_element!(Rect, "rect");
-impl_attr_accessors!(Rect);

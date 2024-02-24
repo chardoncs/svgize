@@ -2,11 +2,14 @@ use quick_xml::events::BytesStart;
 
 use crate::{attr::{impl_attr_accessors, LazyAttrMap}, element::{convert_into_xml, TagName}, push_attr, Point};
 
-use super::{impl_element, WriteXml};
+use super::{impl_accessor, impl_element, WriteXml};
 
+/// Path element (`<path>`)
+///
+/// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/path).
 pub struct Path {
-    d: Option<String>,
-    length: Option<f32>,
+    data: Option<String>,
+    path_length: Option<f32>,
     
     attr: LazyAttrMap,
 }
@@ -14,8 +17,8 @@ pub struct Path {
 impl Default for Path {
     fn default() -> Self {
         Self {
-            d: None,
-            length: None,
+            data: None,
+            path_length: None,
             attr: None,
         }
     }
@@ -37,26 +40,8 @@ impl Path {
         p
     }
 
-    pub fn data(&self) -> Option<&str> {
-        Some(self.d.as_ref()?.as_str())
-    }
-
-    pub fn set_data<T>(&mut self, data: Option<&T>) -> &mut Self
-    where
-        T: ToString,
-    {
-        self.d = data.and_then(|value| Some(value.to_string()));
-        self
-    }
-
-    pub fn path_length(&self) -> Option<f32> {
-        self.length
-    }
-
-    pub fn set_path_length(&mut self, len: Option<f32>) -> &mut Self {
-        self.length = len;
-        self
-    }
+    impl_accessor!(string* -> data, set_data, "d");
+    impl_accessor!(primitive -> path_length, set_path_length, f32, "pathLength");
 }
 
 impl WriteXml for Path {
@@ -65,8 +50,8 @@ impl WriteXml for Path {
             
         let mut bs = BytesStart::new(tag);
 
-        push_attr!(self.d, bs, "d" <- String);
-        push_attr!(self.length, bs, "pathLength" <- prim);
+        push_attr!(self.data, bs, "d" <- String);
+        push_attr!(self.path_length, bs, "pathLength" <- prim);
 
         push_attr!(map: self.attr, bs);
 
