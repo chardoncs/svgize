@@ -4,13 +4,17 @@ use quick_xml::{events::{BytesEnd, BytesStart, BytesText, Event}, Writer};
 
 use crate::error::Error;
 
+pub use self::circle::Circle;
 pub use self::path::Path;
 pub use self::svg::Svg;
 pub use self::rect::Rect;
+pub use self::text::Text;
 
+pub mod circle;
 pub mod path;
 pub mod svg;
 pub mod rect;
+pub mod text;
 
 /// Instance having a tag name.
 pub trait TagName {
@@ -54,6 +58,7 @@ pub(crate) use impl_tag;
 macro_rules! impl_children {
     ($struct_name:tt) => {
         impl crate::element::Children for $struct_name {
+            #[inline]
             fn children(&self) -> Option<&crate::element::ChildList> {
                 self.children.as_ref()
             }
@@ -70,10 +75,12 @@ macro_rules! impl_children {
 
     ($struct_name:tt ?) => {
         impl crate::element::Children for $struct_name {
+            #[inline]
             fn children(&self) -> Option<&Vec<crate::element::ChildKind>> {
                 None
             }
 
+            #[inline]
             fn children_mut(&mut self) -> Result<&mut Vec<crate::element::ChildKind>, crate::error::Error> {
                 Err(crate::error::Error::NoChildrenExpected)
             }
@@ -118,7 +125,7 @@ macro_rules! impl_to_string {
 pub(crate) use impl_to_string;
 
 pub(crate) fn convert_into_xml(writer: &mut Writer<Cursor<Vec<u8>>>, bs: BytesStart, children: Option<&ChildList>, tag: &str) -> Result<(), Error> {
-    if let Some(children) = children.as_ref() {
+    if let Some(children) = children {
         writer.write_event(Event::Start(bs))
             .or_else(|err| Err(Error::XmlWriterError(err)))?;
 

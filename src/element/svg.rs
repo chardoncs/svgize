@@ -81,7 +81,7 @@ impl WriteXml for Svg {
 
         push_attr!(map: self.attr, bs);
 
-        // Add XML namespace of SVG
+        // Add XML namespace for SVG
         bs.push_attribute(("xmlns", "http://www.w3.org/2000/svg"));
 
         convert_into_xml(writer, bs, self.children.as_ref(), tag)

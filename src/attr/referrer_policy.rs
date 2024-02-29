@@ -16,7 +16,8 @@ pub enum ReferrerPolicy {
 impl FromStr for ReferrerPolicy {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s:&str) -> Result<Self, Self::Err> {
+        todo!();
         match s {
             _ => Err(Error::NoOptionFound),
         }

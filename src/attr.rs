@@ -7,6 +7,8 @@ use crate::error::Error;
 #[cfg(feature = "crossorigin")]
 pub mod referrer_policy;
 
+pub mod length_adjust;
+
 pub trait WriteInAttr {
     fn write_in(&self, bs: &mut BytesStart) -> Result<(), Error>;
 }
@@ -26,6 +28,10 @@ where
 
         Ok(())
     }
+}
+
+pub trait AsValue {
+    fn as_value(&self) -> &str;
 }
 
 macro_rules! def_sparse_attr {
