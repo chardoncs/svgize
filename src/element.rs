@@ -234,7 +234,6 @@ macro_rules! impl_accessor {
         #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
         #[doc = $attr]
         #[doc = ")."]
-
         pub fn $setter(&mut self, value: Option<&str>) -> &mut Self {
             self.$name = value.and_then(|value| Some(value.to_string()));
             self
@@ -268,32 +267,6 @@ macro_rules! impl_accessor {
         }
     };
 
-    (string -> $name:ident, $setter:ident, $attr:literal) => {
-        #[doc = "Get `"]
-        #[doc = $attr]
-        #[doc = "`\n\n"]
-        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
-        #[doc = $attr]
-        #[doc = ")."]
-        pub fn $name(&self) -> Option<&str> {
-            Some(self.$name.as_ref()?.as_str())
-        }
-
-        #[doc = "Set `"]
-        #[doc = $attr]
-        #[doc = "`\n\n"]
-        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
-        #[doc = $attr]
-        #[doc = ")."]
-
-        pub fn $setter<T>(&mut self, value: Option<&T>) -> &mut Self
-        where
-            T: ToString,
-        {
-            self.$name = value.and_then(|value| Some(value.to_string()));
-            self
-        }
-    };
     (primitive -> $name:ident, $setter:ident, $type:ty, $attr:literal) => {
         #[doc = "Get `"]
         #[doc = $attr]
@@ -314,6 +287,81 @@ macro_rules! impl_accessor {
 
         pub fn $setter<T>(&mut self, value: Option<$type>) -> &mut Self {
             self.$name = value;
+            self
+        }
+    };
+
+    (list:primitive -> $name:ident, $setter:ident, $attr:literal, $type:ty) => {
+        #[doc = "Get `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $name(&self) -> Option<&Vec<$type>> {
+            self.$name.as_ref()
+        }
+
+        #[doc = "Set `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $setter(&mut self) -> &mut Vec<$type>
+        {
+            if self.$name.is_none() {
+                self.$name = Some(Vec::new());
+            }
+
+            self.$name.as_mut().unwrap()
+        }
+    };
+
+    (ref:move_setter -> $name:ident, $setter:ident, $attr:literal, $type:ty) => {
+        #[doc = "Get `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $name(&self) -> Option<&$type> {
+            self.$name.as_ref()
+        }
+
+        #[doc = "Set `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $setter(&mut self, value: $type) -> &mut Self
+        {
+            self.$name = Some(value);
+            self
+        }
+    };
+    
+    (ref:clone_setter -> $name:ident, $setter:ident, $attr:literal, $type:ty) => {
+        #[doc = "Get `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $name(&self) -> Option<&$type> {
+            self.$name.as_ref()
+        }
+
+        #[doc = "Set `"]
+        #[doc = $attr]
+        #[doc = "`\n"]
+        #[doc = "See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/"]
+        #[doc = $attr]
+        #[doc = ")."]
+        pub fn $setter(&mut self, value: &$type) -> &mut Self
+        {
+            self.$name = Some(value.clone());
             self
         }
     };

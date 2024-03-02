@@ -1,6 +1,6 @@
 use quick_xml::events::BytesStart;
 
-use crate::{attr::{impl_attr_accessors, LazyAttrMap}, element::convert_into_xml, push_attr};
+use crate::{attr::{impl_attr_accessors, LazyAttrMap}, element::{convert_into_xml, Children}, push_attr};
 
 use super::{impl_accessor, impl_element, ChildList, TagName, WriteXml};
 
@@ -41,20 +41,15 @@ impl Default for Rect {
 }
 
 impl Rect {
-    #[inline]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Create an SVG rectangle with `x`, `y`, `width`, and `height`.
-    pub fn create<TX, TY, TW, TH>(x: &TX, y: &TY, width: &TW, height: &TH) -> Self
+    pub fn new<TX, TY, TW, TH>(x: &TX, y: &TY, width: &TW, height: &TH) -> Self
     where
         TX: ToString,
         TY: ToString,
         TW: ToString,
         TH: ToString,
     {
-        let mut rect = Self::new();
+        let mut rect = Self::default();
 
         rect.set_x(Some(x))
             .set_y(Some(y))
@@ -89,7 +84,7 @@ impl WriteXml for Rect {
 
         push_attr!(map: self.attr, bs);
 
-        convert_into_xml(writer, bs, self.children.as_ref(), tag)
+        convert_into_xml(writer, bs, self.children(), tag)
     }
 }
 

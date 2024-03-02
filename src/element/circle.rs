@@ -30,24 +30,19 @@ impl Default for Circle {
 }
 
 impl Circle {
-    #[inline]
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     /// Create a new circle
     ///
     /// ## Parameters
     ///
     /// - center: For `cx` and `cy` attributes
     /// - radius: For `r` attributes
-    pub fn create<TCX, TCY, TR>(center: (&TCX, &TCY), radius: &TR) -> Self
+    pub fn new<TCX, TCY, TR>(center: (&TCX, &TCY), radius: &TR) -> Self
     where
         TCX: ToString,
         TCY: ToString,
         TR: ToString,
     {
-        let mut c = Circle::new();
+        let mut c = Circle::default();
 
         c.set_cx(Some(center.0));
         c.set_cy(Some(center.1));
