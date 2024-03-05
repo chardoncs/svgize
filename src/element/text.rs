@@ -78,7 +78,9 @@ impl WriteXml for Text {
         push_attr!(self.y, bs, "y" <- String);
         push_attr!(self.dx, bs, "dx" <- String);
         push_attr!(self.dy, bs, "dy" <- String);
-        // TODO
+        push_attr!(self.rotate, bs, "rotate" <- primitives | " ");
+        push_attr!(self.length_adjust, bs, "lengthAdjust" <- ToString);
+        push_attr!(self.text_length, bs, "textLength" <- String);
 
         push_attr!(map: self.attr, bs);
 

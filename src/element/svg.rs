@@ -1,6 +1,6 @@
 use quick_xml::events::BytesStart;
 
-use crate::{attr::{impl_attr_accessors, LazyAttrMap}, element::convert_into_xml, push_attr};
+use crate::{attr::{impl_attr_accessors, LazyAttrMap}, constants::SVG_NAMESPACE, element::convert_into_xml, push_attr};
 
 use super::{impl_accessor, impl_element, ChildList, TagName, WriteXml};
 
@@ -23,6 +23,7 @@ pub struct Svg {
 }
 
 impl Default for Svg {
+    #[inline]
     fn default() -> Self {
         Self {
             view_box: None,
@@ -82,8 +83,18 @@ impl WriteXml for Svg {
         push_attr!(map: self.attr, bs);
 
         // Add XML namespace for SVG
-        bs.push_attribute(("xmlns", "http://www.w3.org/2000/svg"));
+        bs.push_attribute(("xmlns", SVG_NAMESPACE));
 
         convert_into_xml(writer, bs, self.children.as_ref(), tag)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn basic_svg_element() {
+        assert_eq!(Svg::new().to_string(), r#"<svg xmlns="http://www.w3.org/2000/svg"/>"#);
     }
 }

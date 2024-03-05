@@ -1,7 +1,6 @@
 pub mod attr;
-
+pub mod constants;
 pub mod element;
-
 pub mod error;
 
 /// Internal helper macro for appending and attribute
@@ -11,7 +10,7 @@ macro_rules! push_attr {
         $var.as_ref().inspect(|i| $bs.push_attribute(($attr, i.as_str())));
     };
 
-    ($var:expr, $bs:ident, $attr:literal <- prim) => {
+    ($var:expr, $bs:ident, $attr:literal <- prim$(itive)?) => {
         $var.inspect(|i| $bs.push_attribute(($attr, i.to_string().as_str())));
     };
 
@@ -21,6 +20,10 @@ macro_rules! push_attr {
 
     ($var:expr, $bs:ident, $attr:literal <- strings | $delim:literal) => {
         $var.as_ref().inspect(|s| $bs.push_attribute(($attr, s.join($delim).as_str())));
+    };
+
+    ($var:expr, $bs:ident, $attr:literal <- primitives | $delim:literal) => {
+        $var.as_ref().inspect(|s| $bs.push_attribute(($attr, s.iter().map(|item| item.to_string()).collect::<Vec<String>>().join($delim).as_str())));
     };
 
     (map: $var:expr, $bs:ident) => {
