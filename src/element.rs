@@ -6,12 +6,14 @@ use crate::error::Error;
 
 pub use self::circle::Circle;
 pub use self::path::Path;
+pub use self::polygon::Polygon;
 pub use self::svg::Svg;
 pub use self::rect::Rect;
 pub use self::text::Text;
 
 pub mod circle;
 pub mod path;
+pub mod polygon;
 pub mod svg;
 pub mod rect;
 pub mod text;
