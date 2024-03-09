@@ -3,7 +3,7 @@ pub mod constants;
 pub mod element;
 pub mod error;
 
-/// Internal helper macro for appending and attribute
+/// Internal helper macro for appending an attribute
 /// into an XML element.
 macro_rules! push_attr {
     ($var:expr, $bs:ident, $attr:literal <- String) => {
@@ -35,28 +35,7 @@ macro_rules! push_attr {
 
 pub(crate) use push_attr;
 
-macro_rules! stringifiable_enum {
-    {[$type_name:ident] $($entry:ident, $attr:literal;)*} => {
-        pub enum $type_name {
-            $(
-                $entry,
-            )*
-        }
-
-        impl ToString for $type_name {
-            fn to_string(&self) -> String {
-                match self {
-                    $(
-                        Self::$entry => $attr,
-                    )*
-                }.to_string()
-            }
-        }
-    };
-}
-
-pub(crate) use stringifiable_enum;
-
+/// Point in a 2D space
 pub struct Point(f32, f32);
 
 impl PartialEq for Point {
@@ -72,3 +51,55 @@ impl ToString for Point {
         format!("{},{}", self.0, self.1)
     }
 }
+
+/// A mutable list of values
+pub struct ValueList<T>
+where
+    T: ToString,
+{
+    inner: Vec<T>,
+}
+
+impl<T> ValueList<T>
+where
+    T: ToString,
+{
+    /// Instantiate a new value list
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            inner: Vec::new(),
+        }
+    }
+
+    /// Append and move an additional value into the value list
+    pub fn push(&mut self, value: T) -> &mut Self {
+        self.inner.push(value);
+        self
+    }
+
+    /// Convert the valut list into a string with item separated by
+    /// a customized delimiter.
+    pub fn into_string_with_delim(self, delim: &str) -> String {
+        self.inner.into_iter().map(|item| item.to_string()).collect::<Vec<String>>().join(delim)
+    }
+
+    /// Convert the value list into a string with item separated by spaces.
+    ///
+    /// Same as `ValueList<T>::into_string_delim(self, " ")`.
+    #[inline]
+    pub fn into_string(self) -> String {
+        self.into_string_with_delim(" ")
+    }
+}
+
+impl<T> Into<String> for ValueList<T>
+where
+    T: ToString,
+{
+    #[inline]
+    fn into(self) -> String {
+        self.into_string()
+    }
+}
+
