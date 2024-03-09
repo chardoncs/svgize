@@ -371,6 +371,6 @@ macro_rules! impl_accessor {
 
 pub(crate) use impl_accessor;
 
-def_element_kind!(Path);
+def_element_kind!(Circle, Path, Polygon, Rect, Text);
 impl_to_string!(ElementKind);
 
