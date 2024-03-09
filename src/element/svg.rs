@@ -24,6 +24,7 @@ pub struct Svg {
 
 impl Default for Svg {
     #[inline]
+    #[must_use]
     fn default() -> Self {
         Self {
             view_box: None,

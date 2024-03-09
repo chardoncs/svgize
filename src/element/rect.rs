@@ -25,6 +25,8 @@ pub struct Rect {
 }
 
 impl Default for Rect {
+    #[inline]
+    #[must_use]
     fn default() -> Self {
         Self {
             x: None,

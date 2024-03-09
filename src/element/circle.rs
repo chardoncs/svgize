@@ -18,6 +18,8 @@ pub struct Circle {
 }
 
 impl Default for Circle {
+    #[inline]
+    #[must_use]
     fn default() -> Self {
         Self {
             cx: None,

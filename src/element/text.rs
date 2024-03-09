@@ -26,6 +26,8 @@ pub struct Text {
 }
 
 impl Default for Text {
+    #[inline]
+    #[must_use]
     fn default() -> Self {
         Self {
             x: None,

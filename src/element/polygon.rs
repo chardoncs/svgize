@@ -14,6 +14,7 @@ pub struct Polygon {
 
 impl Default for Polygon {
     #[inline]
+    #[must_use]
     fn default() -> Self {
         Self {
             points: None,

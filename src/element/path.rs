@@ -15,6 +15,8 @@ pub struct Path {
 }
 
 impl Default for Path {
+    #[inline]
+    #[must_use]
     fn default() -> Self {
         Self {
             data: None,
