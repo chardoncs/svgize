@@ -72,7 +72,7 @@ impl_attr_accessors!(Text);
 
 impl WriteXml for Text {
     fn write_xml(&self, writer: &mut quick_xml::Writer<std::io::Cursor<Vec<u8>>>) -> Result<(), crate::error::Error> {
-        let tag = self.tag_name();
+        let tag = Self::tag_name();
 
         let mut bs = BytesStart::new(tag);
 

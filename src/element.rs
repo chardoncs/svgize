@@ -12,6 +12,7 @@ pub use self::rect::Rect;
 pub use self::text::Text;
 
 pub mod circle;
+pub mod group;
 pub mod path;
 pub mod polygon;
 pub mod svg;
@@ -21,7 +22,7 @@ pub mod text;
 /// Instance having a tag name.
 pub trait TagName {
     /// Access the tag name of current instance.
-    fn tag_name(&self) -> &str;
+    fn tag_name() -> &str;
 }
 
 /// Instance having child nodes.
@@ -47,7 +48,7 @@ macro_rules! impl_tag {
     ($struct_name:tt, $tag:literal) => {
         impl crate::element::TagName for $struct_name {
             #[inline]
-            fn tag_name(&self) -> &str {
+            fn tag_name() -> &'static str {
                 $tag
             }
         }

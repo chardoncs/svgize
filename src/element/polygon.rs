@@ -4,6 +4,9 @@ use crate::{attr::{impl_attr_accessors, LazyAttrMap}, element::{convert_into_xml
 
 use super::{impl_accessor, impl_element, LazyChildList, TagName, WriteXml};
 
+/// SVG polygon element (<polygon>)
+///
+/// See [MDN](https://developer.mozilla.org/en-US/docs/Web/SVG/Element/polygon).
 pub struct Polygon {
     points: Option<String>,
     path_length: Option<f32>,
@@ -45,7 +48,7 @@ impl_attr_accessors!(Polygon);
 
 impl WriteXml for Polygon {
     fn write_xml(&self, writer: &mut quick_xml::Writer<std::io::Cursor<Vec<u8>>>) -> Result<(), crate::error::Error> {
-        let tag = self.tag_name();
+        let tag = Self::tag_name();
 
         let mut bs = BytesStart::new(tag);
 
