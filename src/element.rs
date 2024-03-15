@@ -4,25 +4,65 @@ use quick_xml::{events::{BytesEnd, BytesStart, BytesText, Event}, Writer};
 
 use crate::error::Error;
 
-pub use self::circle::Circle;
-pub use self::path::Path;
-pub use self::polygon::Polygon;
-pub use self::svg::Svg;
-pub use self::rect::Rect;
-pub use self::text::Text;
+macro_rules! def_element_kind {
+    ($($type_name:tt),*) => {
+        pub enum ElementKind {
+            $($type_name($type_name),)*
+        }
 
-pub mod circle;
-pub mod group;
-pub mod path;
-pub mod polygon;
-pub mod svg;
-pub mod rect;
-pub mod text;
+        impl WriteXml for ElementKind {
+            fn write_xml(&self, writer: &mut Writer<Cursor<Vec<u8>>>) -> Result<(), Error> {
+                Ok(match self {
+                    $(
+                        ElementKind::$type_name(inner) => inner.write_xml(writer)?,
+                    )*
+                })
+            }
+        }
+
+        impl Children for ElementKind {
+            fn children(&self) -> Option<&Vec<ChildKind>> {
+                match self {
+                    $(
+                        ElementKind::$type_name(inner) => inner.children(),
+                    )*
+                }
+            }
+
+            fn children_mut(&mut self) -> Result<&mut Vec<ChildKind>, Error> {
+                match self {
+                    $(
+                        ElementKind::$type_name(inner) => inner.children_mut(),
+                    )*
+                }
+            }
+
+        }
+    };
+}
+
+macro_rules! include_elements {
+    ($($mod:ident, $struct:tt),*) => {
+        $(pub use self::$mod::$struct;)*
+        $(pub mod $mod;)*
+        def_element_kind!($($struct),*);
+    };
+}
+
+include_elements!(
+    circle, Circle,
+    group, Group,
+    path, Path,
+    polygon, Polygon,
+    svg, Svg,
+    rect, Rect,
+    text, Text
+);
 
 /// Instance having a tag name.
 pub trait TagName {
     /// Access the tag name of current instance.
-    fn tag_name() -> &str;
+    fn tag_name() -> &'static str;
 }
 
 /// Instance having child nodes.
@@ -152,43 +192,6 @@ pub(crate) fn convert_into_xml(writer: &mut Writer<Cursor<Vec<u8>>>, bs: BytesSt
     }
 
     Ok(())
-}
-
-macro_rules! def_element_kind {
-    ($($type_name:tt),*) => {
-        pub enum ElementKind {
-            $($type_name($type_name),)*
-        }
-
-        impl WriteXml for ElementKind {
-            fn write_xml(&self, writer: &mut Writer<Cursor<Vec<u8>>>) -> Result<(), Error> {
-                Ok(match self {
-                    $(
-                        ElementKind::$type_name(inner) => inner.write_xml(writer)?,
-                    )*
-                })
-            }
-        }
-
-        impl Children for ElementKind {
-            fn children(&self) -> Option<&Vec<ChildKind>> {
-                match self {
-                    $(
-                        ElementKind::$type_name(inner) => inner.children(),
-                    )*
-                }
-            }
-
-            fn children_mut(&mut self) -> Result<&mut Vec<ChildKind>, Error> {
-                match self {
-                    $(
-                        ElementKind::$type_name(inner) => inner.children_mut(),
-                    )*
-                }
-            }
-
-        }
-    };
 }
 
 /// Child kind enumeration
@@ -372,6 +375,5 @@ macro_rules! impl_accessor {
 
 pub(crate) use impl_accessor;
 
-def_element_kind!(Circle, Path, Polygon, Rect, Text);
 impl_to_string!(ElementKind);
 
