@@ -4,8 +4,7 @@ version = "0.0.3"
 edition = "2021"
 authors = ["Charles Dong <charlesdong_2000@outlook.com>"]
 readme = "./README.md"
-repository = "https://github.com/chardon55/svgize.git"
-homepage = "https://github.com/chardon55/svgize"
+repository = "https://github.com/chardoncs/svgize.git"
 license = "MIT OR Apache-2.0"
 description = "Advanced SVG serialization library"
 
